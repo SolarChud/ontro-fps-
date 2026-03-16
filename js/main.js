@@ -9,7 +9,7 @@ let raycaster;
 // Settings State
 let globalSettings = {
     fov: 75,
-    sens: 1.0,
+    sens: 1.0,      // maps to pointerSpeed = sens * 0.003
     volume: 1.0,
     shadows: true
 };
@@ -57,6 +57,7 @@ function updateSettings() {
 
     globalSettings.sens = parseFloat(sensSlider.value);
     sensVal.innerText = globalSettings.sens.toFixed(1);
+    if (controls) controls.pointerSpeed = globalSettings.sens * 0.003;
     
     globalSettings.volume = parseInt(volSlider.value) / 100;
     volVal.innerText = parseInt(volSlider.value);
@@ -101,6 +102,42 @@ const weaponStats = [
 let lastFireTime = 0;
 
 let score = 0;
+
+// Gun effects
+let muzzleLight = null;
+const hitMarkerEl = document.getElementById('hit-marker');
+let hitMarkerTimeout = null;
+
+function showHitMarker() {
+    hitMarkerEl.classList.add('active');
+    clearTimeout(hitMarkerTimeout);
+    hitMarkerTimeout = setTimeout(() => hitMarkerEl.classList.remove('active'), 120);
+}
+
+function triggerMuzzleFlash() {
+    if (!muzzleLight) return;
+    muzzleLight.intensity = 4;
+    setTimeout(() => { if (muzzleLight) muzzleLight.intensity = 0; }, 55);
+}
+
+function createBulletTracer(start, end) {
+    const points = [start.clone(), end.clone()];
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({ color: 0xffe88a, transparent: true, opacity: 0.6 });
+    const line = new THREE.Line(geo, mat);
+    scene.add(line);
+    let opacity = 0.6;
+    const fade = setInterval(() => {
+        opacity -= 0.12;
+        mat.opacity = opacity;
+        if (opacity <= 0) {
+            clearInterval(fade);
+            scene.remove(line);
+            geo.dispose();
+            mat.dispose();
+        }
+    }, 16);
+}
 
 // Audio setup
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -239,14 +276,10 @@ function setupMultiplayer(name) {
                 healthBarFill.style.background = "linear-gradient(90deg, #4CAF50, #8BC34A)";
             }, 300);
 
-            // Flash screen red
-            const overlay = document.createElement('div');
-            overlay.style.position = 'absolute';
-            overlay.style.top = '0'; overlay.style.left = '0'; overlay.style.width = '100vw'; overlay.style.height = '100vh';
-            overlay.style.backgroundColor = 'rgba(255, 0, 0, 0.4)';
-            overlay.style.pointerEvents = 'none';
-            document.body.appendChild(overlay);
-            setTimeout(() => document.body.removeChild(overlay), 150);
+            // Flash screen red using the persistent overlay
+            const dmgFlash = document.getElementById('damage-flash');
+            dmgFlash.classList.add('active');
+            setTimeout(() => dmgFlash.classList.remove('active'), 180);
         } else if (otherPlayers[data.id]) {
             // Another player got hit
             const p = otherPlayers[data.id];
@@ -262,13 +295,10 @@ function setupMultiplayer(name) {
         if (data.killer === myId) {
             score += 100;
             scoreText.innerText = score;
-            
-            // Add to killfeed
+
             const killMsg = document.createElement('div');
-            killMsg.style.color = '#ff9800';
-            killMsg.style.fontWeight = 'bold';
-            killMsg.style.textShadow = '1px 1px 2px black';
-            killMsg.innerText = `You eliminated ${otherPlayers[data.victim]? otherPlayers[data.victim].name : 'a player'} +100`;
+            killMsg.className = 'kill-entry';
+            killMsg.innerText = `You eliminated ${otherPlayers[data.victim] ? otherPlayers[data.victim].name : 'a player'}  +100`;
             killfeed.appendChild(killMsg);
             setTimeout(() => { killMsg.remove(); }, 3000);
         }
@@ -363,9 +393,9 @@ function createGuns() {
         metalness: 0.2
     });
     const accentMat = new THREE.MeshStandardMaterial({
-        color: 0xff9800, 
-        roughness: 0.3, 
-        metalness: 0.9
+        color: 0x1a1a1a,
+        roughness: 0.2,
+        metalness: 0.95
     });
 
     // 0: Pistol (Detailed)
@@ -411,7 +441,7 @@ function createGuns() {
     const rScope = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.8, 12), darkMat);
     rScope.rotation.x = Math.PI / 2;
     rScope.position.set(0, 0.6, 0);
-    const rScopeLens = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.81, 12), new THREE.MeshStandardMaterial({color: 0xff0000, emissive: 0x550000}));
+    const rScopeLens = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 1.81, 12), new THREE.MeshStandardMaterial({color: 0x1a2a3a, roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.7}));
     rScopeLens.rotation.x = Math.PI / 2;
     rScopeLens.position.set(0, 0.6, 0);
 
@@ -474,12 +504,13 @@ function switchWeapon(index) {
 function buildCity() {
     const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
     
-    // create better Standard materials for buildings
+    // Modern concrete / brutalist urban building palette
     const materials = [
-        new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 }),
-        new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.9 }),
-        new THREE.MeshStandardMaterial({ color: 0x181818, roughness: 0.6 }),
-        new THREE.MeshStandardMaterial({ color: 0x34495e, roughness: 0.9 })
+        new THREE.MeshStandardMaterial({ color: 0x3a3a36, roughness: 0.92, metalness: 0.05 }),
+        new THREE.MeshStandardMaterial({ color: 0x2e3038, roughness: 0.88, metalness: 0.05 }),
+        new THREE.MeshStandardMaterial({ color: 0x4a4540, roughness: 0.95, metalness: 0.0  }),
+        new THREE.MeshStandardMaterial({ color: 0x35383e, roughness: 0.90, metalness: 0.05 }),
+        new THREE.MeshStandardMaterial({ color: 0x2a2c2e, roughness: 0.85, metalness: 0.1  }),
     ];
 
     for (let i = 0; i < 60; i++) {
@@ -506,13 +537,20 @@ function buildCity() {
         scene.add(building);
         objects.push(building);
         
-        // Add random cool glowing neon strips to buildings
-        if(Math.random() > 0.6) {
-            const neonGeo = new THREE.BoxGeometry(width + 0.2, 2, depth + 0.2);
-            const neonMat = new THREE.MeshBasicMaterial({color: (Math.random() > 0.5 ? 0x00ffcc : 0xff9800) });
-            const neon = new THREE.Mesh(neonGeo, neonMat);
-            neon.position.set(x, Math.random() * height, z);
-            scene.add(neon);
+        // Subtle window light rows on ~40% of buildings
+        if (Math.random() > 0.6) {
+            const floors = Math.floor(height / 20);
+            const windowMat = new THREE.MeshBasicMaterial({
+                color: Math.random() > 0.5 ? 0xffe8b0 : 0xc8d8ff,
+                transparent: true,
+                opacity: 0.25 + Math.random() * 0.2
+            });
+            for (let f = 1; f < floors; f++) {
+                const winGeo = new THREE.BoxGeometry(width + 0.1, 1.5, depth + 0.1);
+                const win = new THREE.Mesh(winGeo, windowMat);
+                win.position.set(x, f * 20, z);
+                scene.add(win);
+            }
         }
     }
 }
@@ -522,31 +560,41 @@ function init() {
     camera.position.y = 10;
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0c12); // Night sky
-    scene.fog = new THREE.FogExp2(0x0a0c12, 0.002); // Cool thick atmosphere
+    // Modern urban overcast dusk — warm but grounded
+    scene.background = new THREE.Color(0x1e2330);
+    scene.fog = new THREE.FogExp2(0x1e2330, 0.0025);
 
-    const light = new THREE.HemisphereLight(0xeeeeff, 0x777788, 0.6);
-    light.position.set(0.5, 1, 0.75);
-    scene.add(light);
-    
-    const dirLight = new THREE.DirectionalLight(0xaaccff, 0.8);
-    dirLight.position.set(200, 300, 100);
+    // Hemisphere: cool sky above, warm bounce below
+    const skyLight = new THREE.HemisphereLight(0x8899bb, 0x3a3020, 0.7);
+    skyLight.position.set(0, 1, 0);
+    scene.add(skyLight);
+
+    // Main directional sun — warm golden hour angle
+    const dirLight = new THREE.DirectionalLight(0xffddaa, 1.1);
+    dirLight.position.set(-300, 400, 150);
     dirLight.castShadow = globalSettings.shadows;
-    dirLight.shadow.camera.top = 400;
-    dirLight.shadow.camera.bottom = -400;
-    dirLight.shadow.camera.left = -400;
-    dirLight.shadow.camera.right = 400;
-    dirLight.shadow.mapSize.width = 4096; // higher res shadows
+    dirLight.shadow.camera.top = 500;
+    dirLight.shadow.camera.bottom = -500;
+    dirLight.shadow.camera.left = -500;
+    dirLight.shadow.camera.right = 500;
+    dirLight.shadow.mapSize.width = 4096;
     dirLight.shadow.mapSize.height = 4096;
     dirLight.shadow.camera.near = 10;
-    dirLight.shadow.camera.far = 1000;
+    dirLight.shadow.camera.far = 1200;
     scene.add(dirLight);
 
-    // Add ambient neon underlighting to make it look sick
-    const ambientNeon = new THREE.HemisphereLight(0xff9800, 0x00ffcc, 0.2);
-    scene.add(ambientNeon);
+    // Cool fill from opposite side (simulates skybox bounce)
+    const fillLight = new THREE.DirectionalLight(0x6688bb, 0.25);
+    fillLight.position.set(300, 200, -100);
+    scene.add(fillLight);
 
     controls = new PointerLockControls(camera, document.body);
+    controls.pointerSpeed = globalSettings.sens * 0.003; // ~0.003 default = natural FPS feel
+
+    // Muzzle flash point light (attached to camera so it moves with player)
+    muzzleLight = new THREE.PointLight(0xffaa44, 0, 12);
+    muzzleLight.position.set(0, -0.5, -3);
+    camera.add(muzzleLight);
 
     const instructions = document.getElementById('instructions');
     const blocker = instructions; // We removed blocker in HTML
@@ -596,22 +644,22 @@ function init() {
 
     raycaster = new THREE.Raycaster();
 
-    // Floor (Upgraded to look like dark concrete grid)
+    // Asphalt floor — dark matte concrete look
     const floorGeometry = new THREE.PlaneGeometry(2000, 2000);
     floorGeometry.rotateX(-Math.PI / 2);
-    const floorMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x111111,
-        roughness: 0.8,
-        metalness: 0.2
+    const floorMaterial = new THREE.MeshStandardMaterial({
+        color: 0x1a1a18,
+        roughness: 0.95,
+        metalness: 0.0
     });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.receiveShadow = globalSettings.shadows;
     scene.add(floor);
-    
-    // Upgraded Grid
-    const gridHelper = new THREE.GridHelper(2000, 100, 0xff9800, 0x222222);
-    gridHelper.position.y = 0.1; // slightly above floor
-    gridHelper.material.opacity = 0.2;
+
+    // Subtle road marking grid — very faint
+    const gridHelper = new THREE.GridHelper(2000, 50, 0x333330, 0x252520);
+    gridHelper.position.y = 0.15;
+    gridHelper.material.opacity = 0.15;
     gridHelper.material.transparent = true;
     scene.add(gridHelper);
 
@@ -666,7 +714,8 @@ function handleShoot() {
     updateAmmoUI();
 
     playShootSound(stats.sound);
-    
+    triggerMuzzleFlash();
+
     // Animate recoil
     const weaponGroup = weapons[currentWeapon];
     weaponGroup.position.z = -1.5;
@@ -692,19 +741,25 @@ function handleShoot() {
         const combined = [...shootableObjects, ...objects];
         const intersects = raycaster.intersectObjects(combined, false);
         
+        const origin = camera.getWorldPosition(new THREE.Vector3());
+
         if (intersects.length > 0) {
             const hit = intersects[0];
             const target = hit.object;
             const userData = target.userData;
-            
-            // Placeholder for hitting other players in multiplayer
+
+            createBulletTracer(origin, hit.point);
+
             if (userData.isPlayer) {
                 playHitSound(userData.isHead);
+                showHitMarker();
                 const dmg = userData.isHead ? stats.damage * 2 : stats.damage;
                 socket.emit('hitPlayer', { id: userData.id, damage: dmg });
-            } else {
-                // Hit building (could add bullet hole here)
             }
+        } else {
+            // Tracer to max range when nothing hit
+            const farPoint = origin.clone().add(dir.clone().multiplyScalar(600));
+            createBulletTracer(origin, farPoint);
         }
     }
 }
@@ -769,7 +824,7 @@ function animate() {
         direction.x = Number(moveRight) - Number(moveLeft);
         direction.normalize();
 
-        const speed = 400.0 * globalSettings.sens;
+        const speed = 400.0; // movement speed is independent of mouse sensitivity
         if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
         if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
 

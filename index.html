@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ontro FPS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="ui">
+        <div id="crosshair" style="display: none;">
+            <div class="ch-horiz"></div>
+            <div class="ch-vert"></div>
+            <div class="ch-dot"></div>
+        </div>
+        <div id="instructions" style="display: none;">
+            <span style="font-size:40px; font-weight:800; letter-spacing:2px; color:#ff9800; text-shadow: 0 0 10px rgba(255,152,0,0.5);">RESUME</span>
+            <br />
+            <br />
+            W, A, S, D - Move &nbsp;|&nbsp; SPACE - Jump &nbsp;|&nbsp; CLICK - Shoot &nbsp;|&nbsp; 1, 2, 3 - Weapons
+        </div>
+        
+        <div id="hud-top" style="display: none;">
+            <div id="score">SCORE: <span>0</span></div>
+            <div id="killfeed"></div>
+        </div>
+
+        <div id="hud-bottom" style="display: none;">
+            <div class="hud-left">
+                <div class="health-wrapper">
+                    <div class="health-label">HEALTH</div>
+                    <div class="health-bar-bg"><div id="health-bar-fill"></div></div>
+                    <div id="health-text">100</div>
+                </div>
+            </div>
+            <div class="hud-right">
+                <div id="weapon-ui">PISTOL</div>
+                <div id="ammo-ui">∞ / ∞</div>
+                <div id="controls-hint">1: PSTL | 2: RFL | 3: SHTG</div>
+            </div>
+        </div>
+        
+        <!-- Settings Modal (Hidden by default) -->
+        <div id="settings-modal" class="hidden">
+            <div class="settings-content">
+                <h2>SETTINGS</h2>
+                <div class="setting-group">
+                    <label>Field of View (FOV): <span id="fov-val">75</span></label>
+                    <input type="range" id="fov-slider" min="60" max="120" value="75">
+                </div>
+                <div class="setting-group">
+                    <label>Mouse Sensitivity: <span id="sens-val">1.0</span>x</label>
+                    <input type="range" id="sens-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+                </div>
+                <div class="setting-group">
+                    <label>Master Volume: <span id="vol-val">100</span>%</label>
+                    <input type="range" id="vol-slider" min="0" max="100" value="100">
+                </div>
+                <div class="setting-group checkbox-group">
+                    <label>Dynamic Shadows</label>
+                    <label class="switch">
+                      <input type="checkbox" id="shadows-check" checked>
+                      <span class="slider round"></span>
+                    </label>
+                </div>
+                <button id="settings-close-btn" class="btn primary">APPLY & CLOSE</button>
+            </div>
+        </div>
+
+        <div id="main-menu-container">
+            <div class="menu-left">
+                <div class="menu-header">
+                    <button id="settings-open-btn" class="icon-btn" title="Settings">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </button>
+                </div>
+                <h1 class="game-title">ONTRO FPS</h1>
+                <p class="game-tagline">A fast-paced multiplayer FPS experience.</p>
+                <div class="game-info">
+                    <h3>Features:</h3>
+                    <ul class="feature-list">
+                        <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffb74d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:12px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Fast-paced combat</li>
+                        <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:12px;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Real-time multiplayer</li>
+                        <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5252" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:12px;"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg> Multiple weapon choices</li>
+                        <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9E9E9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:12px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="9" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="15"></line></svg> Procedurally generated maps</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="menu-right">
+                <div class="auth-box" id="auth-section">
+                    <h2>Login or Sign Up</h2>
+                    <div id="auth-error"></div>
+                    <input type="email" id="email-input" placeholder="Email" />
+                    <input type="password" id="password-input" placeholder="Password" />
+                    <div class="auth-buttons">
+                        <button id="login-btn" class="btn primary">Login</button>
+                        <button id="signup-btn" class="btn secondary">Sign Up</button>
+                    </div>
+                    <div class="divider"><span>OR</span></div>
+                    <button id="google-login-btn" class="btn google">
+                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style="width: 20px; height: 20px; margin-right: 10px;">
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                            <path fill="none" d="M0 0h48v48H0z"></path>
+                        </svg>
+                        Sign in with Google
+                    </button>
+                </div>
+                
+                <div class="play-box hidden" id="play-section">
+                    <h2>Welcome, <span id="user-display-name">Player</span>!</h2>
+                    <button id="logout-btn" class="btn text-btn">Logout</button>
+                    <input type="text" id="player-name" placeholder="In-game Nickname" maxlength="15" />
+                    <button id="start-btn" class="btn play-btn">DROP INTO GAME</button>
+                    <p id="connection-status"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ES Module Import for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
